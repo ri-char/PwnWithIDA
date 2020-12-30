@@ -1,24 +1,29 @@
 # -*-coding:utf-8 -*-
 import inspect
 import ctypes
-import SocketServer
 import socket
 import threading
 import traceback
+import sys
 import idaapi
 import ida_dbg
 import ida_kernwin
 
+if sys.version_info.major==2:
+    from SocketServer import *
+else:
+    from socketserver import *
+
 RI_BASE_PORT = 9945
 
 
-class MainTCPHandler(SocketServer.BaseRequestHandler):
+class MainTCPHandler(BaseRequestHandler):
     def handle(self):
         idaapi.msg("Accepting connection from {}\n".format(
             self.client_address[0]))
         while True:
             try:
-                data = self.request.recv(1024)
+                data = self.request.recv(1024).decode()
                 if len(data) == 0:
                     break
                 command = data.strip().split(' ')
@@ -58,11 +63,11 @@ class MainTCPHandler(SocketServer.BaseRequestHandler):
 
                 idaapi.msg('res>  '+str(result)+'\n')
                 if result:
-                    self.request.sendall('T\n')
+                    self.request.sendall(b'T\n')
                 else:
-                    self.request.sendall('F\n')
-            except Exception as e:
-                traceback.print_exception(e)
+                    self.request.sendall(b'F\n')
+            except:
+                traceback.print_exc()
 
         idaapi.msg("Closing connection from {}\n".format(
             self.client_address[0]))
@@ -147,7 +152,7 @@ def stop_thread(thread):
 
 
 class RemoteIDA(idaapi.plugin_t):
-    flags = idaapi.PLUGIN_KEEP
+    flags = idaapi.PLUGIN_HIDE
     comment = "Control IDA by TCP"
     wanted_name = "RemoteIDA"  # 插件的名称，在IDA界面导航栏中显示 Edit->Plugins->myplugin
     wanted_hotkey = ""
@@ -184,7 +189,7 @@ class RemoteIDA(idaapi.plugin_t):
         i = 0
         while True:
             try:
-                server = SocketServer.TCPServer(
+                server = TCPServer(
                     ("", RI_BASE_PORT+i), MainTCPHandler)
                 self.server = threading.Thread(target=server.serve_forever)
                 self.server.start()

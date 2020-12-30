@@ -50,7 +50,7 @@ def connect(remoteAddr: str = '',
             except InterruptedError:
                 pass
             except Exception as e:
-                traceback.print_exception(e)
+                traceback.print_exc()
             finally:
                 ida.exit()
                 ida.close()
