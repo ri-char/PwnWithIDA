@@ -8,6 +8,7 @@ from pwnlib.tubes.remote import remote
 from pwnlib.tubes.process import process
 from pwnlib.tubes.ssh import ssh_channel
 from pwnlib.util.proc import pidof
+from pwn import *
 import traceback
 
 
@@ -22,7 +23,7 @@ def parseAddr(addr: str):
 def connect(remoteAddr: str = '',
             elf: str = '',
             isRemote: bool = False,
-            idaAddr: str = '192.168.137.1:9945',
+            idaAddr: str = '',
             *args, **kwargs):
     def decorator(func):
         @wraps(func)
@@ -37,13 +38,17 @@ def connect(remoteAddr: str = '',
                 _isRemote = True
             else:
                 e = ELF(elf, checksec=False)
+                context.binary = elf
 
             if _isRemote:
                 p = remote(*parseAddr(remoteAddr), *args, **kwargs)
                 ida = IDAManage(isWork=False)
             else:
                 p = process(elf, *args, **kwargs)
-                ida = IDAManage(*parseAddr(idaAddr), p)
+                if idaAddr!='':
+                    ida = IDAManage(*parseAddr(idaAddr), p)
+                else:
+                    ida = IDAManage(isWork=False)
             try:
                 func(p, ida, e)
                 p.interactive()
@@ -87,7 +92,6 @@ class IDAManage:
             self.ida.send('attach '+str(pidof(self.proc)[0]))
         else:
             self.ida.send('attach '+str(pidof(self.proc)[0]))
-        sleep(0.2)
         return self.ida.recvline(keepends=False) == 'T'
 
     @__checkwork
@@ -122,3 +126,9 @@ class IDAManage:
     @__checkwork
     def close(self):
         self.ida.close()
+
+    @__checkwork
+    def attachAndContinue(self):
+        self.attach()
+        sleep(0.5)
+        self.c()

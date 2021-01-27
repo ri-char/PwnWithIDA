@@ -30,6 +30,8 @@ ida=IDAManage(isWork=False)
 # 3.操作
 # 附加IDA调试
 ida.attach()
+# 附加IDA调试并continue
+ida.attachAndContinue()
 # 附加IDA调试,若IDA当前处于调试状态，将先终止当前调试，然后attach
 ida.attachWithExit()
 # continue，相当于快捷键F9
